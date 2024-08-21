@@ -2,7 +2,7 @@ import pyautogui, time, pytz
 from datetime import datetime
 
 
-def move_mouse():
+def move_mouse_and_type():
     est = pytz.timezone("US/Eastern")
     start_time = datetime.now(est)
     print(f"Script started at: {start_time.strftime('%B %d, %Y %I:%M:%S %p %Z')}")
@@ -16,24 +16,23 @@ def move_mouse():
         )
     )
 
-    # Get the initial mouse position, ensuring it's not too close to the screen edges
     initial_x, initial_y = pyautogui.position()
-    initial_x = max(
-        20, initial_x
-    )  # Ensures X position is at least 20 pixels from the left edge
-    initial_y = max(
-        20, initial_y
-    )  # Ensures Y position is at least 20 pixels from the top edge
+    initial_x = max(100, initial_x)
+    initial_y = max(100, initial_y)
 
     while datetime.now(est) < end_time:
-        # Move the mouse slightly left and right
-        pyautogui.moveTo(initial_x + 10, initial_y, duration=0.5)
-        time.sleep(0.5)
-        pyautogui.moveTo(initial_x - 10, initial_y, duration=0.5)
-        time.sleep(0.5)
+        # Simulate mouse movement
+        pyautogui.moveTo(initial_x + 100, initial_y + 100, duration=0.5)
+        time.sleep(1)
+        pyautogui.moveTo(initial_x - 100, initial_y - 100, duration=0.5)
+        time.sleep(1)
+
+        # Simulate a harmless keyboard press
+        pyautogui.press("shift")
+        time.sleep(1)
 
     print(f"Stopping script at {end_time.strftime('%I:%M %p %Z')}")
 
 
 if __name__ == "__main__":
-    move_mouse()
+    move_mouse_and_type()
