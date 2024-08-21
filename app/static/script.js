@@ -1,30 +1,48 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const startForm = document.getElementById("start-form");
+document.addEventListener("DOMContentLoaded", function () {
+  const startButton = document.getElementById("start-button");
   const stopButton = document.getElementById("stop-button");
   const responseDiv = document.getElementById("response");
 
-  startForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const endTime = document.getElementById("end-time").value;
+  // Establish WebSocket connection
+  const socket = new WebSocket("ws://localhost:8000/ws");
 
-    const response = await fetch("/start", {
+  // Handle WebSocket messages
+  socket.onmessage = function (event) {
+    responseDiv.innerText = event.data;
+    if (
+      event.data.includes("Script has finished running") ||
+      event.data.includes("Script stopped by user")
+    ) {
+      stopButton.classList.remove("highlight");
+    }
+  };
+
+  // Handle button click to start the script
+  startButton.addEventListener("click", function () {
+    const endTime = document.getElementById("end-time").value;
+    fetch("/start", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ end_time: endTime }),
-    });
-
-    const result = await response.json();
-    responseDiv.textContent = result.status;
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        responseDiv.innerText = data.status;
+        stopButton.classList.add("highlight");
+      });
   });
 
-  stopButton.addEventListener("click", async () => {
-    const response = await fetch("/stop", {
+  // Handle button click to stop the script
+  stopButton.addEventListener("click", function () {
+    fetch("/stop", {
       method: "POST",
-    });
-
-    const result = await response.json();
-    responseDiv.textContent = result.status;
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        responseDiv.innerText = data.status;
+        stopButton.classList.remove("highlight");
+      });
   });
 });
