@@ -1,2 +1,7 @@
 pyautogui
 pytz
+fastapi
+uvicorn
+pynput
+jinja2
+websockets
