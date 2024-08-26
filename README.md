@@ -26,3 +26,8 @@ This is a simple web application that allows you to start and stop a script that
    ```sh
    git clone https://github.com/yourusername/mouse-mover.git
    cd mouse-mover
+
+2. Install virtual environment and activate it
+    ```sh
+    python3 -m venv env
+    source env/bin/activate  # On Windows use `env\Scripts\activate`
