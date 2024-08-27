@@ -1,12 +1,12 @@
 # Mouse Mover Application
 
-This is a simple web application that allows you to start and stop a script that moves the mouse cursor back and forth until a specified end time. The application is built using FastAPI for the backend and vanilla JavaScript for the frontend.
+This is a simple desktop application that allows you to start and stop a script that moves the mouse cursor back and forth until a specified end time. The application is built using PyQt for the GUI.
 
 ## Features
 
 - Start the mouse mover script with a specified end time.
 - Stop the mouse mover script manually.
-- Real-time status updates via WebSocket.
+- Real-time status updates within the application.
 
 ## Requirements
 
@@ -14,17 +14,13 @@ This is a simple web application that allows you to start and stop a script that
 - The following Python packages (listed in `requirements.txt`):
   - `pyautogui`
   - `pytz`
-  - `fastapi`
-  - `uvicorn`
-  - `pynput`
-  - `jinja2`
-  - `websockets`
+  - `PyQt5`
 
 ## Installation
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/mouse-mover.git
+   git clone https://github.com/gavvahar/mouse-mover.git
    cd mouse-mover
 
 2. Install virtual environment and activate it:
@@ -38,16 +34,12 @@ This is a simple web application that allows you to start and stop a script that
 
 ## Usage
 
-1. Start the FastAPI server:
+1. Run the application:
     ```sh
-    uvicorn app.main:app --reload
-
-2. Open your web browser and navigate to the site:
-    ```sh
-    http://localhost:8000
-
-3. Enter the end time and click "Start Script" to start the mouse mover script
+    python3 main.py
+    
+2. Enter the end time and click "Start Script" to start the mouse mover script
     ```sh
     e.g., 4:00 PM
 
-4. Click "Stop Script" to stop the script manually
+3. Click "Stop Script" to stop the script manually
