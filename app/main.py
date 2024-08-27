@@ -1,101 +1,118 @@
-import asyncio
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+import sys
 import pyautogui
 import pytz
 from datetime import datetime
-import threading
-
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
-
-
-class EndTime(BaseModel):
-    end_time: str
-
-
-# Global variable to manage script status
-script_status = {"running": False, "message": ""}
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QMessageBox,
+)
+from PyQt5.QtCore import QThread, pyqtSignal
 
 
-def run_mouse_script(end_time_str: str):
-    est = pytz.timezone("US/Eastern")
-    end_time = datetime.strptime(end_time_str, "%I:%M %p")
-    end_time = est.localize(datetime.combine(datetime.now(est).date(), end_time.time()))
+class MouseMoverThread(QThread):
+    status_signal = pyqtSignal(str)
 
-    global script_status
-    script_status["running"] = True
-    script_status["message"] = ""
+    def __init__(self, end_time_str):
+        super().__init__()
+        self.end_time_str = end_time_str
+        self.running = True
 
-    start_time = datetime.now(est)
-    print(f"Script started at: {start_time.strftime('%B %d, %Y %I:%M:%S %p %Z')}")
+    def run(self):
+        est = pytz.timezone("US/Eastern")
+        end_time = datetime.strptime(self.end_time_str, "%I:%M %p")
+        end_time = est.localize(
+            datetime.combine(datetime.now(est).date(), end_time.time())
+        )
 
-    initial_x, initial_y = pyautogui.position()
-    initial_x = max(20, initial_x)
-    initial_y = max(20, initial_y)
-    shift_pressed = False
+        start_time = datetime.now(est)
+        self.status_signal.emit(
+            f"Script started at: {start_time.strftime('%B %d, %Y %I:%M:%S %p %Z')}"
+        )
 
-    while datetime.now(est) < end_time:
-        if not shift_pressed:
-            pyautogui.keyDown("shift")
-            shift_pressed = True
+        initial_x, initial_y = pyautogui.position()
+        initial_x = max(20, initial_x)
+        initial_y = max(20, initial_y)
+        shift_pressed = False
 
-        pyautogui.moveTo(initial_x + 10, initial_y, duration=0.5)
-        pyautogui.moveTo(initial_x - 10, initial_y, duration=0.5)
+        while datetime.now(est) < end_time and self.running:
+            if not shift_pressed:
+                pyautogui.keyDown("shift")
+                shift_pressed = True
 
-        # Check if the script has been stopped by the user
-        if not script_status["running"]:
-            break
+            pyautogui.moveTo(initial_x + 10, initial_y, duration=0.5)
+            pyautogui.moveTo(initial_x - 10, initial_y, duration=0.5)
 
-    if shift_pressed:
-        pyautogui.keyUp("shift")
+        if shift_pressed:
+            pyautogui.keyUp("shift")
 
-    script_status["running"] = False
-    if datetime.now(est) >= end_time:
-        script_status["message"] = "Script has finished running."
-    else:
-        script_status["message"] = "Script stopped."
+        if datetime.now(est) >= end_time:
+            self.status_signal.emit("Script has finished running.")
+        else:
+            self.status_signal.emit("Script stopped.")
 
-
-@app.get("/", response_class=HTMLResponse)
-async def get_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.post("/start")
-async def start_script(end_time: EndTime):
-    if script_status["running"]:
-        return {"status": "Script already running"}
-
-    thread = threading.Thread(target=run_mouse_script, args=(end_time.end_time,))
-    thread.start()
-    return {"status": "Script started"}
+    def stop(self):
+        self.running = False
 
 
-@app.post("/stop")
-async def stop_script():
-    if not script_status["running"]:
-        return {"status": "No script is currently running"}
+class MouseMoverApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+        self.thread = None
 
-    # Just setting the message here. You would need a mechanism to force stop
-    script_status["message"] = "Script stopped by user"
-    script_status["running"] = False
-    return {"status": "Script stopped"}
+    def initUI(self):
+        self.setWindowTitle("Mouse Mover Application")
+        self.setGeometry(100, 100, 400, 200)
+
+        layout = QVBoxLayout()
+
+        self.label = QLabel("End Time (e.g., 4:00 PM):", self)
+        layout.addWidget(self.label)
+
+        self.end_time_input = QLineEdit(self)
+        layout.addWidget(self.end_time_input)
+
+        self.start_button = QPushButton("Start Script", self)
+        self.start_button.clicked.connect(self.start_script)
+        layout.addWidget(self.start_button)
+
+        self.stop_button = QPushButton("Stop Script", self)
+        self.stop_button.clicked.connect(self.stop_script)
+        layout.addWidget(self.stop_button)
+
+        self.response_label = QLabel("", self)
+        layout.addWidget(self.response_label)
+
+        self.setLayout(layout)
+
+    def start_script(self):
+        end_time = self.end_time_input.text()
+        if not end_time:
+            QMessageBox.warning(self, "Input Error", "Please enter a valid end time.")
+            return
+
+        self.thread = MouseMoverThread(end_time)
+        self.thread.status_signal.connect(self.update_status)
+        self.thread.start()
+        self.response_label.setText("Script started")
+
+    def stop_script(self):
+        if self.thread:
+            self.thread.stop()
+            self.thread = None
+            self.response_label.setText("Script stopped")
+
+    def update_status(self, message):
+        self.response_label.setText(message)
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            if script_status["running"]:
-                await websocket.send_text("Script is running")
-            elif script_status["message"]:
-                await websocket.send_text(script_status["message"])
-            await asyncio.sleep(1)
-    except WebSocketDisconnect:
-        print("WebSocket connection closed")
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    ex = MouseMoverApp()
+    ex.show()
+    sys.exit(app.exec_())
