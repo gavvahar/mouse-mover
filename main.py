@@ -1,4 +1,4 @@
-import sys, pyautogui, pytz
+import sys, pyautogui, pytz, time
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication,
@@ -42,8 +42,10 @@ class MouseMoverThread(QThread):
             if not shift_pressed:
                 pyautogui.keyDown("shift")
                 shift_pressed = True
-            pyautogui.moveTo(initial_x + 10, initial_y, duration=0.5)
-            pyautogui.moveTo(initial_x - 10, initial_y, duration=0.5)
+            pyautogui.moveTo(initial_x + 100, initial_y + 100, duration=0.5)
+            time.sleep(1)
+            pyautogui.moveTo(initial_x - 100, initial_y - 100, duration=0.5)
+            time.sleep(1)
 
         if shift_pressed:
             pyautogui.keyUp("shift")
